@@ -1,48 +1,55 @@
-from rest_framework import viewsets
 from django.contrib.auth.models import User
-from rest_framework.serializers import Serializer
-
-from .serializers import *
-from rest_framework.permissions import IsAuthenticated
-from .models import Task
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status
+from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework import status, filters
 from rest_framework.decorators import action
+from rest_framework.serializers import Serializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import SearchFilter, OrderingFilter
+
+from apps.tasks.models import Task
+from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer
 
 
 class TasksViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
-    search_fields = ['title']
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter,)
+    filter_fields = (
+        'completed',
+    )
+    search_fields = (
+        'title',
+    )
+    ordering_fields = (
+        'id',
+    )
 
     def perform_create(self, serializer):
         user = self.request.user
         serializer.save(created_by=user, assigned_by=user)
 
-    # def get_queryset(self):
-    #     return Task.objects.filter(user=self.request.user)
-
-    @action(methods=['GET'], detail=False, serializer_class=TaskSerializer)
+    @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='my-tasks')
     def my_tasks(self, request, *args, **kwargs):
-        queryset = Task.objects.filter(assigned_by=self.request.user)
+        queryset = self.queryset.filter(assigned_by=self.request.user)
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=['GET'], detail=False, serializer_class=TaskSerializer)
+    @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='completed-tasks')
     def completed_tasks(self, request, *args, **kwargs):
-        queryset = Task.objects.filter(completed=True)
+        queryset = self.queryset.filter(completed=True)
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=True, serializer_class=TaskAndCommentsSerializer)
     def comments(self, request, *args, **kwargs):
-        task = self.get_object()
-        serializer = TaskAndCommentsSerializer(task)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=['POST'], detail=True, serializer_class=ChangeUserSerializer)
+    @action(methods=['POST'], detail=True, serializer_class=ChangeUserSerializer, url_path='change-user')
     def change_user(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
@@ -62,12 +69,11 @@ class TasksViewSet(viewsets.ModelViewSet):
         instance.save()
         return Response(status=status.HTTP_201_CREATED)
 
-    @action(methods=['POST'], detail=True, serializer_class=CommentSerializer)
+    @action(methods=['POST'], detail=True, serializer_class=CommentSerializer, url_path='create-comment')
     def create_comment(self, request, *args, **kwargs):
         task = self.get_object()
         serializer = CommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         task.assigned_by.email_user(
             subject='Task Manager',
             message='Your task was commented',
@@ -78,6 +84,5 @@ class TasksViewSet(viewsets.ModelViewSet):
                 subject='Task Manager',
                 message='This task is completed',
             )
-
         serializer.save(task=task)
         return Response(serializer.validated_data, status=status.HTTP_201_CREATED)

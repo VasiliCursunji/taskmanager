@@ -12,7 +12,10 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 
 from pathlib import Path
 import os
+
+import rest_framework.filters
 from dotenv import load_dotenv
+
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -44,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'drf_yasg',
-
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -106,7 +109,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
@@ -116,6 +118,12 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.OrderingFilter',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 10,
 }
 
 SWAGGER_SETTINGS = {

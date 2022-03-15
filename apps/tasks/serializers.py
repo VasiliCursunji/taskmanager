@@ -12,7 +12,6 @@ class TaskSerializer(serializers.ModelSerializer):
         }
 
 
-
 class ChangeUserSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(required=True)
 
