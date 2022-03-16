@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User
+from django.db.models import Sum
 from django_filters.rest_framework import DjangoFilterBackend
+
+
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.response import Response
@@ -8,9 +11,9 @@ from rest_framework.serializers import Serializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from apps.tasks.models import Task
+from apps.tasks.models import Task, Timelog, Timer, TaskQuerySet
 from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer, \
-    TimeLogSerializer
+    ManualTimeLogSerializer, TaskTimeLogSerializer
 
 
 class TasksViewSet(viewsets.ModelViewSet):
@@ -32,6 +35,12 @@ class TasksViewSet(viewsets.ModelViewSet):
         user = self.request.user
         serializer.save(created_by=user, assigned_by=user)
 
+    def get_queryset(self):
+        queryset: TaskQuerySet = super(TasksViewSet, self).get_queryset()
+        if self.action == 'list':
+            return queryset.with_total_duration()
+        return queryset
+
     @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='my-tasks')
     def my_tasks(self, request, *args, **kwargs):
         queryset = self.queryset.filter(assigned_by=self.request.user)
@@ -50,6 +59,49 @@ class TasksViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
+    @action(methods=['GET'], detail=True, serializer_class=TaskTimeLogSerializer, url_path='timelog-history')
+    def timelog_history(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['PATCH'], detail=True, serializer_class=Serializer)
+    def complete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.complete()
+        instance.save()
+        return Response(status=status.HTTP_201_CREATED)
+
+    @action(methods=['POST'], detail=True, serializer_class=Serializer, url_path='start-task')
+    def start_task(self, request, *args, **kwargs):
+        instance = Timer.objects.create(user=self.request.user, task=self.get_object())
+        instance.save()
+        instance.start()
+
+        return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, serializer_class=Serializer, url_path='pause-task')
+    def pause_task(self, request, *args, **kwargs):
+        instance = Timer.objects.filter(user=self.request.user, task=self.get_object()).last()
+        instance.pause()
+
+        return Response(status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, serializer_class=Serializer, url_path='stop-task')
+    def stop_task(self, request, *args, **kwargs):
+        instance = Timer.objects.filter(user=self.request.user, task=self.get_object()).last()
+        instance.stop()
+
+        return Response(instance.total_duration, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, serializer_class=ManualTimeLogSerializer, url_path='manual-timelog')
+    def manual_timelog(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(task=instance, user=request.user)
+        return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
     @action(methods=['POST'], detail=True, serializer_class=ChangeUserSerializer, url_path='change-user')
     def change_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -62,35 +114,6 @@ class TasksViewSet(viewsets.ModelViewSet):
         )
         serializer.save(assigned_by=new_user)
         return Response(serializer.data)
-
-    @action(methods=['PATCH'], detail=True, serializer_class=Serializer)
-    def complete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.complete()
-        instance.save()
-        return Response(status=status.HTTP_201_CREATED)
-
-    @action(methods=['POST'], detail=True, serializer_class=TimeLogSerializer, url_path='start-task')
-    def start_task(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = TimeLogSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save(task=instance)
-        return Response(status=status.HTTP_201_CREATED)
-
-    # @action(methods=['PATCH'], detail=True, serializer_class=Serializer, url_path='pause-task')
-    # def pause_task(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #
-    #     instance.save()
-    #     return Response(status=status.HTTP_201_CREATED)
-    #
-    # @action(methods=['PATCH'], detail=True, serializer_class=Serializer, url_path='stop-task')
-    # def stop_task(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     instance.is_stopped = True
-    #     instance.save()
-    #     return Response(status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True, serializer_class=CommentSerializer, url_path='create-comment')
     def create_comment(self, request, *args, **kwargs):
