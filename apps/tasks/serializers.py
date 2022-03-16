@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Task, Comment
+from .models import Task, Comment, TimeLog
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -43,3 +43,12 @@ class TaskAndCommentsSerializer(serializers.ModelSerializer):
             'title',
             'comments',
         )
+
+
+class TimeLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TimeLog
+        fields = ()
+        extra_kwargs = {
+            'task': {'read_only': True},
+        }

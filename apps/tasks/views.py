@@ -9,7 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from apps.tasks.models import Task
-from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer
+from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer, \
+    TimeLogSerializer
 
 
 class TasksViewSet(viewsets.ModelViewSet):
@@ -65,9 +66,31 @@ class TasksViewSet(viewsets.ModelViewSet):
     @action(methods=['PATCH'], detail=True, serializer_class=Serializer)
     def complete(self, request, *args, **kwargs):
         instance = self.get_object()
-        instance.completed = True
+        instance.complete()
         instance.save()
         return Response(status=status.HTTP_201_CREATED)
+
+    @action(methods=['POST'], detail=True, serializer_class=TimeLogSerializer, url_path='start-task')
+    def start_task(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = TimeLogSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(task=instance)
+        return Response(status=status.HTTP_201_CREATED)
+
+    # @action(methods=['PATCH'], detail=True, serializer_class=Serializer, url_path='pause-task')
+    # def pause_task(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+    #
+    #     instance.save()
+    #     return Response(status=status.HTTP_201_CREATED)
+    #
+    # @action(methods=['PATCH'], detail=True, serializer_class=Serializer, url_path='stop-task')
+    # def stop_task(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+    #     instance.is_stopped = True
+    #     instance.save()
+    #     return Response(status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True, serializer_class=CommentSerializer, url_path='create-comment')
     def create_comment(self, request, *args, **kwargs):
