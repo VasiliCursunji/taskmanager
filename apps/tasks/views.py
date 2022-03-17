@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Sum
+from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-
 
 from rest_framework import status
 from rest_framework import viewsets
@@ -64,6 +64,26 @@ class TasksViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False, url_path='amount-by-last-month')
+    def amount_by_last_month(self, request, *args, **kwargs):
+        amount_time = Timelog.objects.filter(
+            started_at__month__gte=timezone.now().month,
+            started_at__year__gte=timezone.now().year,
+            user=self.request.user,
+        ).aggregate(sum=Sum('duration'))
+
+        return Response({'last_month': amount_time}, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='top-by-last-month')
+    def top_by_last_month(self, request, *args, **kwargs):
+        queryset = self.queryset.filter(
+            timelog__started_at__month__gte=timezone.now().month,
+            timelog__started_at__year__gte=timezone.now().year,
+        ).annotate(total_duration=Sum('timelog__duration')
+                   ).order_by('-total_duration')[:20]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(methods=['PATCH'], detail=True, serializer_class=Serializer)
     def complete(self, request, *args, **kwargs):

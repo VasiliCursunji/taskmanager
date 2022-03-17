@@ -69,7 +69,7 @@ class Timer(models.Model):
         if self.is_running:
             duration = timezone.now() - self.started_at
             self.duration += duration
-            self.started_at = None
+            self.started_at = self.started_at
             self.is_running = False
             self.save()
 

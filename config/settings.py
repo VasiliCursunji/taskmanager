@@ -35,19 +35,31 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    # Django
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'apps.users',
-    'apps.tasks',
+    'django_filters',
+    # Third-party
     'rest_framework',
+    'drf_yasg',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
-    'drf_yasg',
-    'django_filters',
+    'django_nose',
+    # Apps
+    'apps.users',
+    'apps.tasks',
+]
+
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = [
+    '--with-coverage',
+    '--cover-package=' + ','.join([app + '.views' for app in INSTALLED_APPS if app.startswith('apps.')]),
+    '--cover-html',
 ]
 
 MIDDLEWARE = [

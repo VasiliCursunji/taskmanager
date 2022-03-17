@@ -3,7 +3,7 @@ from .models import Task, Comment, Timelog
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    total_duration = serializers.DurationField()
+    total_duration = serializers.DurationField(read_only=True)
 
     class Meta:
         model = Task
@@ -11,6 +11,7 @@ class TaskSerializer(serializers.ModelSerializer):
             'id',
             'title',
             'description',
+            'completed',
             'total_duration',
         )
         extra_kwargs = {
