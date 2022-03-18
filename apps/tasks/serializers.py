@@ -13,21 +13,13 @@ class TaskSerializer(serializers.ModelSerializer):
             'description',
             'completed',
             'total_duration',
+            'created_by',
+            'assigned_by',
         )
         extra_kwargs = {
             'created_by': {'read_only': True},
             'assigned_by': {'read_only': True}
         }
-
-
-class ChangeUserSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(required=True)
-
-    class Meta:
-        model = Task
-        fields = (
-            'user_id',
-        )
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -40,6 +32,31 @@ class CommentSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'task': {'read_only': True},
         }
+
+
+class DetailTaskSerializer(serializers.ModelSerializer):
+    comments = CommentSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'title',
+            'description',
+            'created_by',
+            'assigned_by',
+            'comments',
+        )
+
+
+class ChangeUserSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(required=True)
+
+    class Meta:
+        model = Task
+        fields = (
+            'user_id',
+        )
 
 
 class TaskAndCommentsSerializer(serializers.ModelSerializer):

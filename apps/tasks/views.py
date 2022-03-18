@@ -13,7 +13,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from apps.tasks.models import Task, Timelog, Timer, TaskQuerySet
 from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer, \
-    ManualTimeLogSerializer, TaskTimeLogSerializer
+    ManualTimeLogSerializer, TaskTimeLogSerializer, DetailTaskSerializer
 
 
 class TasksViewSet(viewsets.ModelViewSet):
@@ -40,6 +40,11 @@ class TasksViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return queryset.with_total_duration()
         return queryset
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = DetailTaskSerializer(instance)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='my-tasks')
     def my_tasks(self, request, *args, **kwargs):
