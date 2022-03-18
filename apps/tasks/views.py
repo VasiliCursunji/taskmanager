@@ -133,7 +133,7 @@ class TasksViewSet(viewsets.ModelViewSet):
             message='New task was assigned to you',
         )
         serializer.save(assigned_by=new_user)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True, serializer_class=CommentSerializer, url_path='create-comment')
     def create_comment(self, request, *args, **kwargs):

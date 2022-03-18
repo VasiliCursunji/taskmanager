@@ -14,7 +14,7 @@ class AccountTests(APITestCase):
         }
 
         response = self.client.post('/users/register/', data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
 
         data = {
             "first_name": "string1",
