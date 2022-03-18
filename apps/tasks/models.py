@@ -25,6 +25,7 @@ class Task(models.Model):
 
     def complete(self):
         self.completed = True
+        self.save()
 
 
 class Comment(models.Model):

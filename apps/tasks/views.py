@@ -89,13 +89,11 @@ class TasksViewSet(viewsets.ModelViewSet):
     def complete(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.complete()
-        instance.save()
         return Response(status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True, serializer_class=Serializer, url_path='start-task')
     def start_task(self, request, *args, **kwargs):
         instance = Timer.objects.create(user=self.request.user, task=self.get_object())
-        instance.save()
         instance.start()
 
         return Response(status=status.HTTP_200_OK)
@@ -128,11 +126,11 @@ class TasksViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         new_user = User.objects.get(id=self.request.data['user_id'])
+        serializer.save(assigned_by=new_user)
         new_user.email_user(
             subject='Task Manager',
             message='New task was assigned to you',
         )
-        serializer.save(assigned_by=new_user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(methods=['POST'], detail=True, serializer_class=CommentSerializer, url_path='create-comment')
@@ -140,15 +138,14 @@ class TasksViewSet(viewsets.ModelViewSet):
         task = self.get_object()
         serializer = CommentSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        serializer.save(task=task)
         task.assigned_by.email_user(
             subject='Task Manager',
             message='Your task was commented',
         )
-
         if task.completed is True:
             task.assigned_by.email_user(
                 subject='Task Manager',
                 message='This task is completed',
             )
-        serializer.save(task=task)
         return Response(serializer.validated_data, status=status.HTTP_201_CREATED)
