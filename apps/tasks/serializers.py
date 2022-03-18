@@ -1,9 +1,13 @@
 from rest_framework import serializers
-from .models import Task, Comment, Timelog
+
+from apps.tasks.models import Task, Comment, Timelog
+from apps.users.serializers import UserSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
     total_duration = serializers.DurationField(read_only=True)
+    created_by = UserSerializer(read_only=True)
+    assigned_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Task
@@ -16,10 +20,6 @@ class TaskSerializer(serializers.ModelSerializer):
             'created_by',
             'assigned_by',
         )
-        extra_kwargs = {
-            'created_by': {'read_only': True},
-            'assigned_by': {'read_only': True}
-        }
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -36,6 +36,8 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class DetailTaskSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(read_only=True, many=True)
+    created_by = UserSerializer(read_only=True)
+    assigned_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Task
