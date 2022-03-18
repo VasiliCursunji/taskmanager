@@ -16,7 +16,7 @@ class UserRegistrationView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated_data = serializer.validated_data
-        user = serializer.save(username=validated_data['email'])
+        user = serializer.save(username=validated_data['email'], is_staff=True)
         user.set_password(validated_data['password'])
         user.save()
 
