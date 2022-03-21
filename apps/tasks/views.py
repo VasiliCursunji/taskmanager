@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import status
@@ -80,6 +82,7 @@ class TasksViewSet(viewsets.ModelViewSet):
 
         return Response({'last_month': amount_time}, status=status.HTTP_200_OK)
 
+    @method_decorator(cache_page(60))
     @action(methods=['GET'], detail=False, serializer_class=TaskSerializer, url_path='top-by-last-month')
     def top_by_last_month(self, request, *args, **kwargs):
         queryset = self.queryset.filter(
