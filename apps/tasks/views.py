@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.serializers import Serializer
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from apps.tasks.models import Task, Timelog, Timer, TaskQuerySet
 from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, CommentSerializer, ChangeUserSerializer, \
@@ -19,7 +20,8 @@ from apps.tasks.serializers import TaskSerializer, TaskAndCommentsSerializer, Co
 
 
 class TasksViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, )
+    authentication_classes = (JWTAuthentication, )
     serializer_class = TaskSerializer
     queryset = Task.objects.all()
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter,)
