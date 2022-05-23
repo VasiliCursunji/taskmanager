@@ -1,24 +1,24 @@
 from rest_framework import serializers
-from .models import Task, Comment, TimeLog
+
+from apps.tasks.models import Task, Comment, Timelog
+from apps.users.serializers import UserSerializer
 
 
 class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = '__all__'
-        extra_kwargs = {
-            'created_by': {'read_only': True},
-            'assigned_by': {'read_only': True}
-        }
-
-
-class ChangeUserSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(required=True)
+    total_duration = serializers.DurationField(read_only=True)
+    created_by = UserSerializer(read_only=True)
+    assigned_by = UserSerializer(read_only=True)
 
     class Meta:
         model = Task
         fields = (
-            'user_id',
+            'id',
+            'title',
+            'description',
+            'completed',
+            'total_duration',
+            'created_by',
+            'assigned_by',
         )
 
 
@@ -34,6 +34,33 @@ class CommentSerializer(serializers.ModelSerializer):
         }
 
 
+class DetailTaskSerializer(serializers.ModelSerializer):
+    comments = CommentSerializer(read_only=True, many=True)
+    created_by = UserSerializer(read_only=True)
+    assigned_by = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'title',
+            'description',
+            'created_by',
+            'assigned_by',
+            'comments',
+        )
+
+
+class ChangeUserSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(required=True)
+
+    class Meta:
+        model = Task
+        fields = (
+            'user_id',
+        )
+
+
 class TaskAndCommentsSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(read_only=True, many=True)
 
@@ -47,8 +74,27 @@ class TaskAndCommentsSerializer(serializers.ModelSerializer):
 
 class TimeLogSerializer(serializers.ModelSerializer):
     class Meta:
-        model = TimeLog
-        fields = ()
+        model = Timelog
+        fields = '__all__'
+
+
+class TaskTimeLogSerializer(serializers.ModelSerializer):
+    timelog = TimeLogSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Task
+        fields = (
+            'id',
+            'title',
+            'timelog',
+        )
+
+
+class ManualTimeLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Timelog
+        fields = '__all__'
         extra_kwargs = {
             'task': {'read_only': True},
+            'user': {'read_only': True},
         }
